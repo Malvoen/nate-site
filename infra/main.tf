@@ -82,7 +82,15 @@ resource "azurerm_storage_blob" "not_found" {
   source                 = "${path.module}/../site/404.html"
   content_md5            = filemd5("${path.module}/../site/404.html")
 }
-
+   resource "azurerm_storage_blob" "test" {
+     name                   = "test.html"
+     storage_account_name   = azurerm_storage_account.site.name
+     storage_container_name = "$web"
+     type                   = "Block"
+     content_type           = "text/html"
+     source                 = "${path.module}/../site/test.html"
+     content_md5            = filemd5("${path.module}/../site/test.html")
+   }
 output "website_url" {
   value = azurerm_storage_account.site.primary_web_endpoint
 }
