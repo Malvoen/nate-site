@@ -1,0 +1,45 @@
+name: Terraform - site infrastructure
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['infra/**', 'site/**']
+  push:
+    branches: [main]
+    paths: ['infra/**', 'site/**']
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC token for Azure
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.TF_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.TF_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.TF_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: "true"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -input=false -out=tfplan
+
+      # Apply only on main (after a PR is merged, or a manual run on main)
+      - name: Terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: terraform apply -input=false -auto-approve tfplan
