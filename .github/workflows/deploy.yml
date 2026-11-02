@@ -1,0 +1,34 @@
+name: Deploy website to Azure Storage
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**']        # only run when website files change
+  workflow_dispatch:          # adds a "Run workflow" button for manual runs
+
+permissions:
+  id-token: write             # required for OIDC login to Azure
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure (OIDC, no stored password)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true   # pipeline only has a data role, no subscription role
+
+      - name: Upload site to $web container
+        run: |
+          az storage blob upload-batch \
+            --account-name stnatelab15658 \
+            --source site \
+            --destination '$web' \
+            --auth-mode login \
+            --overwrite
